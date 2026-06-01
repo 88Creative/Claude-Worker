@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Analytics — The Exchange (Version 1: Command Centre)</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #D94B2B;
+    --red-light: #FDF1EE;
+    --red-mid: #F4C5B8;
+    --navy: #0F1E2E;
+    --navy-mid: #1C3045;
+    --slate: #4A5568;
+    --muted: #718096;
+    --border: #E8EDF2;
+    --surface: #F7F9FC;
+    --white: #FFFFFF;
+    --success: #16A34A;
+    --success-bg: #DCFCE7;
+    --warning: #D97706;
+    --warning-bg: #FEF3C7;
+    --danger: #DC2626;
+    --danger-bg: #FEE2E2;
+    --blue: #2563EB;
+    --blue-bg: #EFF6FF;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    --shadow-lg: 0 20px 48px rgba(0,0,0,0.12), 0 8px 24px rgba(0,0,0,0.06);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  body {
+    font-family: var(--font);
+    background: var(--surface);
+    color: var(--navy);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 10;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--navy);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 13px; color: white; letter-spacing: -0.5px;
+  }
+  .logo-text { font-weight: 700; font-size: 15px; color: var(--navy); }
+  .logo-sub { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .sidebar-nav { padding: 12px 0; flex: 1; overflow-y: auto; }
+  .nav-section { padding: 0 8px; margin-bottom: 4px; }
+  .nav-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; padding: 8px 12px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; border-radius: var(--radius-sm);
+    cursor: pointer; color: var(--slate);
+    font-size: 13.5px; font-weight: 500;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .nav-item:hover { background: var(--surface); color: var(--navy); }
+  .nav-item.active { background: var(--red-light); color: var(--red); }
+  .nav-item .icon { width: 18px; height: 18px; opacity: 0.7; flex-shrink: 0; }
+  .nav-item.active .icon { opacity: 1; }
+  .nav-sub { padding-left: 16px; }
+  .nav-sub .nav-item { font-size: 13px; padding: 6px 12px; }
+  .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+  .nav-item.active .nav-dot, .nav-item.sub-active .nav-dot { background: var(--red); }
+  .nav-item.sub-active { color: var(--red); font-weight: 600; }
+  .sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--navy-mid); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: white; flex-shrink: 0; }
+  .avatar-info { flex: 1; min-width: 0; }
+  .avatar-name { font-size: 12.5px; font-weight: 600; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .avatar-role { font-size: 11px; color: var(--muted); }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: 220px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 28px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  .breadcrumb-item { color: var(--muted); cursor: pointer; transition: color 0.15s; }
+  .breadcrumb-item:hover { color: var(--navy); }
+  .breadcrumb-item.current { color: var(--navy); font-weight: 600; }
+  .breadcrumb-sep { color: var(--border); font-size: 16px; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: none; transition: all 0.15s;
+    text-decoration: none;
+  }
+  .btn-ghost { background: transparent; color: var(--slate); border: 1.5px solid var(--border); }
+  .btn-ghost:hover { background: var(--surface); border-color: #CBD5E0; color: var(--navy); }
+  .btn-primary { background: var(--navy); color: white; }
+  .btn-primary:hover { background: var(--navy-mid); }
+  .btn-red { background: var(--red); color: white; }
+  .btn-red:hover { background: #C23E22; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn svg { width: 15px; height: 15px; }
+
+  /* ── PAGE CONTENT ── */
+  .page { display: none; flex-direction: column; flex: 1; }
+  .page.active { display: flex; }
+  .page-body { padding: 28px; flex: 1; }
+
+  /* ── SCREEN 1: OVERVIEW ── */
+  .filters-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .search-box {
+    position: relative; flex: 1; min-width: 220px; max-width: 320px;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 9px 14px 9px 38px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px; font-family: var(--font);
+    background: var(--white);
+    color: var(--navy);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-box input:focus { border-color: var(--navy); }
+  .search-box .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 16px; height: 16px; }
+  .filter-select {
+    padding: 9px 32px 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px; font-family: var(--font);
+    background: var(--white); color: var(--navy);
+    outline: none; cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    transition: border-color 0.15s;
+  }
+  .filter-select:focus { border-color: var(--navy); }
+  .toggle-group {
+    display: flex; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;
+    margin-left: auto;
+  }
+  .toggle-btn {
+    padding: 7px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    background: transparent; border: none; color: var(--muted); transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .toggle-btn.active { background: var(--white); color: var(--navy); box-shadow: var(--shadow-sm); }
+
+  /* METRICS STRIP */
+  .metrics-strip {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .metric-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .metric-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .metric-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--border);
+  }
+  .metric-card.blue::before { background: linear-gradient(90deg, #2563EB, #60A5FA); }
+  .metric-card.green::before { background: linear-gradient(90deg, #16A34A, #4ADE80); }
+  .metric-card.orange::before { background: linear-gradient(90deg, #D97706, #FBBF24); }
+  .metric-card.red::before { background: linear-gradient(90deg, #DC2626, #F87171); }
+  .metric-card.purple::before { background: linear-gradient(90deg, #7C3AED, #A78BFA); }
+  .metric-card.teal::before { background: linear-gradient(90deg, #0891B2, #22D3EE); }
+  .metric-label { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .metric-value { font-size: 26px; font-weight: 800; color: var(--navy); letter-spacing: -1px; line-height: 1; }
+  .metric-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .metric-delta {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11.5px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-top: 6px;
+  }
+  .delta-up { background: var(--success-bg); color: var(--success); }
+  .delta-down { background: var(--danger-bg); color: var(--danger); }
+
+  /* CAMPAIGN TYPE TABS */
+  .type-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .type-tab {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: var(--white); color: var(--slate);
+    transition: all 0.15s;
+  }
+  .type-tab:hover { border-color: var(--navy); color: var(--navy); }
+  .type-tab.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .type-tab .count {
+    font-size: 11px; font-weight: 700;
+    padding: 1px 7px; border-radius: 10px;
+    background: rgba(255,255,255,0.2);
+  }
+  .type-tab:not(.active) .count { background: var(--surface); color: var(--muted); }
+
+  /* CAMPAIGN TABLE */
+  .table-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .table-title { font-size: 15px; font-weight: 700; color: var(--navy); }
+  .table-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    padding: 10px 16px;
+    background: var(--surface);
+    font-size: 11.5px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    text-align: left; border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  thead th:first-child { padding-left: 20px; }
+  thead th:last-child { padding-right: 20px; }
+  .th-sort { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+    cursor: pointer;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface); }
+  tbody td { padding: 14px 16px; vertical-align: middle; }
+  tbody td:first-child { padding-left: 20px; }
+  tbody td:last-child { padding-right: 20px; }
+  .campaign-preview {
+    width: 52px; height: 36px; border-radius: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    overflow: hidden; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .campaign-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .campaign-preview-placeholder { font-size: 18px; }
+  .campaign-info { display: flex; align-items: center; gap: 12px; }
+  .campaign-name { font-weight: 600; font-size: 13.5px; color: var(--navy); margin-bottom: 2px; }
+  .campaign-type-badge {
+    display: inline-flex; align-items: center;
+    font-size: 11px; font-weight: 600; padding: 2px 8px;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .badge-promo { background: #EFF6FF; color: #2563EB; }
+  .badge-service { background: #F0FDF4; color: #16A34A; }
+  .badge-event { background: #FDF4FF; color: #9333EA; }
+  .badge-newsletter { background: #FFF7ED; color: #C2410C; }
+  .badge-triggered { background: #F0F9FF; color: #0369A1; }
+  .stat-cell { font-size: 13.5px; font-weight: 600; color: var(--navy); }
+  .stat-sub { font-size: 11.5px; color: var(--muted); font-weight: 400; }
+  .rate-bar { width: 60px; height: 4px; background: var(--border); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+  .rate-bar-fill { height: 100%; border-radius: 2px; }
+  .bar-green { background: var(--success); }
+  .bar-orange { background: var(--warning); }
+  .bar-red { background: var(--danger); }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green { background: var(--success); }
+  .dot-orange { background: var(--warning); }
+  .dot-red { background: var(--danger); }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 6px;
+  }
+  .chip-green { background: var(--success-bg); color: var(--success); }
+  .chip-red { background: var(--danger-bg); color: var(--danger); }
+  .chip-orange { background: var(--warning-bg); color: var(--warning); }
+  .chip-blue { background: var(--blue-bg); color: var(--blue); }
+
+  /* ── SCREEN 2: CAMPAIGN DETAIL ── */
+  .detail-hero {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    display: flex; gap: 24px; align-items: flex-start;
+    box-shadow: var(--shadow-sm);
+  }
+  .detail-preview {
+    width: 120px; height: 80px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; flex-shrink: 0;
+  }
+  .detail-info { flex: 1; }
+  .detail-name { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 6px; letter-spacing: -0.5px; }
+  .detail-meta { display: flex; gap: 16px; flex-wrap: wrap; }
+  .detail-meta-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .detail-meta-item strong { color: var(--navy); font-weight: 600; }
+  .detail-actions { display: flex; gap: 8px; }
+
+  .detail-metrics {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .detail-metric {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+  }
+  .detail-metric-value { font-size: 28px; font-weight: 800; color: var(--navy); letter-spacing: -1px; margin-bottom: 4px; }
+  .detail-metric-label { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .detail-metric-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  .detail-grid { display: grid; grid-template-columns: 1fr 320px; gap: 16px; }
+  .detail-grid-full { display: flex; flex-direction: column; gap: 16px; }
+
+  .panel {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title { font-size: 14.5px; font-weight: 700; color: var(--navy); }
+  .panel-body { padding: 20px; }
+
+  /* Donut chart placeholder */
+  .donut-wrap { position: relative; width: 120px; height: 120px; margin: 0 auto 16px; }
+  .donut-wrap svg { transform: rotate(-90deg); }
+  .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .donut-pct { font-size: 22px; font-weight: 800; color: var(--navy); }
+  .donut-label { font-size: 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; }
+  .legend-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { flex: 1; color: var(--slate); }
+  .legend-val { font-weight: 700; color: var(--navy); }
+  .legend-pct { font-size: 12px; color: var(--muted); }
+
+  /* ── SIDE TRAY ── */
+  .tray-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15, 30, 46, 0.35);
+    z-index: 50;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .tray-overlay.open { opacity: 1; pointer-events: all; }
+  .side-tray {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 520px;
+    background: var(--white);
+    border-left: 1px solid var(--border);
+    z-index: 51;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; flex-direction: column;
+    box-shadow: var(--shadow-lg);
+  }
+  .side-tray.open { transform: translateX(0); }
+  .tray-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+    background: var(--white);
+    flex-shrink: 0;
+  }
+  .tray-close {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--surface); border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--slate); transition: all 0.15s;
+    margin-left: auto; flex-shrink: 0;
+  }
+  .tray-close:hover { background: var(--border); color: var(--navy); }
+  .tray-avatar {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--navy-mid); display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 16px; color: white;
+  }
+  .tray-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+  .tray-subtitle { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .tray-body { flex: 1; overflow-y: auto; padding: 24px; }
+  .tray-section { margin-bottom: 24px; }
+  .tray-section-title { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; }
+  .tray-metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tray-metric {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+  }
+  .tray-metric-val { font-size: 20px; font-weight: 800; color: var(--navy); letter-spacing: -0.5px; }
+  .tray-metric-label { font-size: 11.5px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+  .tray-timeline { display: flex; flex-direction: column; gap: 0; }
+  .timeline-item { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
+  .timeline-item:not(:last-child)::before {
+    content: ''; position: absolute; left: 11px; top: 24px; bottom: 0;
+    width: 1px; background: var(--border);
+  }
+  .timeline-dot { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+  .tl-sent { background: var(--blue-bg); color: var(--blue); }
+  .tl-opened { background: var(--success-bg); color: var(--success); }
+  .tl-clicked { background: #F0FDF4; color: var(--success); }
+  .tl-bounced { background: var(--danger-bg); color: var(--danger); }
+  .timeline-content { flex: 1; }
+  .timeline-event { font-size: 13.5px; font-weight: 600; color: var(--navy); }
+  .timeline-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .timeline-detail { font-size: 12.5px; color: var(--slate); margin-top: 4px; background: var(--surface); padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); }
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { font-size: 13px; color: var(--muted); }
+  .info-val { font-size: 13px; font-weight: 600; color: var(--navy); }
+
+  /* Responsive metric toggle */
+  .metric-value-pct { display: none; }
+  body.show-pct .metric-value-count { display: none; }
+  body.show-pct .metric-value-pct { display: block; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">EX</div>
+    <div>
+      <div class="logo-text">The Exchange</div>
+      <div class="logo-sub">Dealer Portal</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-item" onclick="void(0)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Home
+      </div>
+      <div class="nav-item" onclick="void(0)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Print centre
+      </div>
+      <div class="nav-item" onclick="void(0)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Flyers
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Emails</div>
+      <div class="nav-item active">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Emails
+      </div>
+      <div class="nav-sub">
+        <div class="nav-item sub-active"><span class="nav-dot"></span> Analytics</div>
+        <div class="nav-item"><span class="nav-dot"></span> Campaigns</div>
+        <div class="nav-item"><span class="nav-dot"></span> ISV triggered</div>
+        <div class="nav-item"><span class="nav-dot"></span> Audiences</div>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-item" onclick="void(0)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        Brands
+      </div>
+      <div class="nav-item" onclick="void(0)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Explore assets
+      </div>
+      <div class="nav-item" onclick="void(0)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Furniture
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-item" onclick="void(0)">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Settings
+      </div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="avatar">CT</div>
+    <div class="avatar-info">
+      <div class="avatar-name">Carol Townsend</div>
+      <div class="avatar-role">Dealer Admin</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb" id="breadcrumb">
+        <span class="breadcrumb-item current" onclick="goTo('overview')">Email Analytics</span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+      <button class="btn btn-red">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 0 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        View CJA Report
+      </button>
+    </div>
+  </div>
+
+  <!-- PAGE: OVERVIEW -->
+  <div class="page active" id="page-overview">
+    <div class="page-body">
+
+      <!-- Filters -->
+      <div class="filters-row">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Search campaigns…" id="searchInput" oninput="filterCampaigns()">
+        </div>
+        <select class="filter-select" id="typeFilter" onchange="filterCampaigns()">
+          <option value="">All campaign types</option>
+          <option value="Promotional">Promotional</option>
+          <option value="Service">Service</option>
+          <option value="Event">Event</option>
+          <option value="Newsletter">Newsletter</option>
+          <option value="ISV Triggered">ISV Triggered</option>
+        </select>
+        <select class="filter-select" id="dateFilter" onchange="filterCampaigns()">
+          <option value="">All time</option>
+          <option value="7">Last 7 days</option>
+          <option value="30" selected>Last 30 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="365">Last 12 months</option>
+        </select>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="pctBtn" onclick="setToggle('pct')">%</button>
+          <button class="toggle-btn" id="cntBtn" onclick="setToggle('count')">#</button>
+        </div>
+      </div>
+
+      <!-- Campaign type tabs -->
+      <div class="type-tabs">
+        <div class="type-tab active" onclick="setTypeTab(this, '')">
+          All Types <span class="count">47</span>
+        </div>
+        <div class="type-tab" onclick="setTypeTab(this, 'Promotional')">
+          Promotional <span class="count">18</span>
+        </div>
+        <div class="type-tab" onclick="setTypeTab(this, 'Service')">
+          Service <span class="count">12</span>
+        </div>
+        <div class="type-tab" onclick="setTypeTab(this, 'Event')">
+          Event <span class="count">7</span>
+        </div>
+        <div class="type-tab" onclick="setTypeTab(this, 'Newsletter')">
+          Newsletter <span class="count">6</span>
+        </div>
+        <div class="type-tab" onclick="setTypeTab(this, 'ISV Triggered')">
+          ISV Triggered <span class="count">4</span>
+        </div>
+      </div>
+
+      <!-- Metrics Strip -->
+      <div class="metrics-strip">
+        <div class="metric-card blue">
+          <div class="metric-label">Campaigns</div>
+          <div class="metric-value">47</div>
+          <div class="metric-sub">across all types</div>
+          <div class="metric-delta delta-up">↑ 12% vs prior period</div>
+        </div>
+        <div class="metric-card teal">
+          <div class="metric-label">Emails Sent</div>
+          <div class="metric-value">284K</div>
+          <div class="metric-sub">284,219 total</div>
+          <div class="metric-delta delta-up">↑ 8.4%</div>
+        </div>
+        <div class="metric-card green">
+          <div class="metric-label">Delivery Rate</div>
+          <div class="metric-value metric-value-pct">96.8%</div>
+          <div class="metric-value metric-value-count" style="display:none">275K</div>
+          <div class="metric-sub metric-value-pct">275,100 delivered</div>
+          <div class="metric-sub metric-value-count" style="display:none">275,100 of 284,219</div>
+          <div class="metric-delta delta-up">↑ 1.2%</div>
+        </div>
+        <div class="metric-card orange">
+          <div class="metric-label">Open Rate</div>
+          <div class="metric-value metric-value-pct">34.2%</div>
+          <div class="metric-value metric-value-count" style="display:none">94.1K</div>
+          <div class="metric-sub metric-value-pct">94,122 opens</div>
+          <div class="metric-sub metric-value-count" style="display:none">94,122 opens</div>
+          <div class="metric-delta delta-up">↑ 3.7%</div>
+        </div>
+        <div class="metric-card red">
+          <div class="metric-label">Bounce Rate</div>
+          <div class="metric-value metric-value-pct">3.2%</div>
+          <div class="metric-value metric-value-count" style="display:none">9,095</div>
+          <div class="metric-sub metric-value-pct">9,095 bounced</div>
+          <div class="metric-sub metric-value-count" style="display:none">9,095 of 284,219</div>
+          <div class="metric-delta delta-down">↑ 0.4%</div>
+        </div>
+        <div class="metric-card purple">
+          <div class="metric-label">Unsubscribe</div>
+          <div class="metric-value metric-value-pct">0.8%</div>
+          <div class="metric-value metric-value-count" style="display:none">2,274</div>
+          <div class="metric-sub metric-value-pct">2,274 unsubs</div>
+          <div class="metric-sub metric-value-count" style="display:none">2,274 of 284,219</div>
+          <div class="metric-delta delta-down">↑ 0.1%</div>
+        </div>
+      </div>
+
+      <!-- Campaign Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <div>
+            <div class="table-title">Campaign Performance</div>
+            <div class="table-meta" id="tableMetaText">Showing 8 campaigns · Last 30 days</div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th><span class="th-sort">Campaign <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></span></th>
+              <th><span class="th-sort">Sent Date ↓</span></th>
+              <th><span class="th-sort">Sent</span></th>
+              <th><span class="th-sort">Opens</span></th>
+              <th><span class="th-sort">Clicks</span></th>
+              <th><span class="th-sort">Bounces</span></th>
+              <th>Unsubscribes</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="campaignTableBody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: CAMPAIGN DETAIL -->
+  <div class="page" id="page-detail">
+    <div class="page-body">
+      <!-- Hero -->
+      <div class="detail-hero">
+        <div class="detail-preview" id="detailPreview">📧</div>
+        <div class="detail-info">
+          <div class="detail-name" id="detailName">Campaign Name</div>
+          <div class="detail-meta">
+            <div class="detail-meta-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> <strong id="detailDate">—</strong></div>
+            <div class="detail-meta-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <span id="detailAudience">All subscribers</span></div>
+            <div class="detail-meta-item" id="detailBadgeWrap"></div>
+          </div>
+        </div>
+        <div class="detail-actions">
+          <button class="btn btn-ghost btn-sm" onclick="previewEmail()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview Email
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="exportPDF()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Export PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary Metrics -->
+      <div class="detail-metrics">
+        <div class="detail-metric">
+          <div class="detail-metric-value" id="dm-sent">—</div>
+          <div class="detail-metric-label">Emails Sent</div>
+        </div>
+        <div class="detail-metric">
+          <div class="detail-metric-value" style="color: var(--success)" id="dm-delivery">—</div>
+          <div class="detail-metric-label">Delivered</div>
+          <div class="detail-metric-sub" id="dm-delivery-sub">—</div>
+        </div>
+        <div class="detail-metric">
+          <div class="detail-metric-value" style="color: var(--blue)" id="dm-opens">—</div>
+          <div class="detail-metric-label">Open Rate</div>
+          <div class="detail-metric-sub" id="dm-opens-sub">—</div>
+        </div>
+        <div class="detail-metric">
+          <div class="detail-metric-value" style="color: var(--warning)" id="dm-bounces">—</div>
+          <div class="detail-metric-label">Bounce Rate</div>
+          <div class="detail-metric-sub" id="dm-bounces-sub">—</div>
+        </div>
+        <div class="detail-metric">
+          <div class="detail-metric-value" style="color: var(--danger)" id="dm-unsubs">—</div>
+          <div class="detail-metric-label">Unsubscribes</div>
+          <div class="detail-metric-sub" id="dm-unsubs-sub">—</div>
+        </div>
+        <div class="detail-metric">
+          <div class="detail-metric-value" style="color: var(--success)" id="dm-revenue">—</div>
+          <div class="detail-metric-label">Revenue</div>
+          <div class="detail-metric-sub">attributed</div>
+        </div>
+      </div>
+
+      <!-- Detail Grid -->
+      <div class="detail-grid">
+        <!-- Engagement table -->
+        <div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Recipient Engagement</div>
+              <div class="toggle-group">
+                <button class="toggle-btn active">All</button>
+                <button class="toggle-btn">Opened</button>
+                <button class="toggle-btn">Bounced</button>
+                <button class="toggle-btn">Unsub'd</button>
+              </div>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Recipient</th>
+                  <th>Status</th>
+                  <th>Last Opened</th>
+                  <th>Opens</th>
+                  <th>Clicks</th>
+                  <th>Unsub</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="recipientTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Deliverability panel -->
+        <div class="detail-grid-full">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Deliverability</div>
+            </div>
+            <div class="panel-body">
+              <div class="donut-wrap">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#E8EDF2" stroke-width="16"/>
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#16A34A" stroke-width="16"
+                    stroke-dasharray="305 9" stroke-linecap="round"/>
+                </svg>
+                <div class="donut-center">
+                  <div class="donut-pct">97.1%</div>
+                  <div class="donut-label">Delivered</div>
+                </div>
+              </div>
+              <div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: var(--success)"></div>
+                  <div class="legend-label">Delivered</div>
+                  <div class="legend-val">5,786</div>
+                  <div class="legend-pct">97.1%</div>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: var(--danger)"></div>
+                  <div class="legend-label">Hard Bounce</div>
+                  <div class="legend-val">98</div>
+                  <div class="legend-pct">1.6%</div>
+                </div>
+                <div class="legend-item">
+                  <div class="legend-dot" style="background: var(--warning)"></div>
+                  <div class="legend-label">Soft Bounce</div>
+                  <div class="legend-val">76</div>
+                  <div class="legend-pct">1.3%</div>
+                </div>
+              </div>
+              <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border)">
+                <div class="tray-section-title">Bounce Reasons</div>
+                <div class="info-row">
+                  <span class="info-key">Mailbox full</span>
+                  <span class="info-val">41</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-key">Invalid address</span>
+                  <span class="info-val">67</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-key">Domain not found</span>
+                  <span class="info-val">31</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-key">Server timeout</span>
+                  <span class="info-val">35</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- TRAY OVERLAY -->
+<div class="tray-overlay" id="trayOverlay" onclick="closeTray()"></div>
+
+<!-- SIDE TRAY: RECIPIENT DETAIL -->
+<aside class="side-tray" id="sideTray">
+  <div class="tray-header">
+    <div class="tray-avatar" id="trayAvatar">JD</div>
+    <div>
+      <div class="tray-title" id="trayName">John Doe</div>
+      <div class="tray-subtitle" id="trayEmail">john.doe@email.com</div>
+    </div>
+    <button class="tray-close" onclick="closeTray()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="tray-body">
+    <div class="tray-section">
+      <div class="tray-section-title">Engagement Summary</div>
+      <div class="tray-metric-grid" id="trayMetrics"></div>
+    </div>
+    <div class="tray-section">
+      <div class="tray-section-title">Recipient Info</div>
+      <div id="trayInfo"></div>
+    </div>
+    <div class="tray-section">
+      <div class="tray-section-title">Activity Timeline</div>
+      <div class="tray-timeline" id="trayTimeline"></div>
+    </div>
+  </div>
+</aside>
+
+<script>
+// ── DATA ──
+const campaigns = [
+  { id: 1, emoji: '🚗', name: 'Spring Service Special — Full Vehicle Health Check', type: 'Service', date: '12 May 2025, 09:00', sent: 6024, opens: 2389, openPct: 39.7, clicks: 412, bounces: 187, bouncePct: 3.1, unsubs: 24, unsubPct: 0.4, revenue: '£12,400' },
+  { id: 2, emoji: '🏎️', name: 'New Arrivals: Spring 2025 Range — Exclusive Preview', type: 'Promotional', date: '8 May 2025, 10:30', sent: 8741, opens: 3148, openPct: 36.0, clicks: 621, bounces: 214, bouncePct: 2.4, unsubs: 41, unsubPct: 0.5, revenue: '£34,800' },
+  { id: 3, emoji: '📅', name: 'Dealer Open Day — Saturday 17 May, Join Us!', type: 'Event', date: '5 May 2025, 08:00', sent: 4512, opens: 1624, openPct: 36.0, clicks: 289, bounces: 162, bouncePct: 3.6, unsubs: 18, unsubPct: 0.4, revenue: '£6,200' },
+  { id: 4, emoji: '📰', name: 'May Dealer Digest — News, Offers & Updates', type: 'Newsletter', date: '1 May 2025, 11:00', sent: 7823, opens: 2192, openPct: 28.0, clicks: 187, bounces: 234, bouncePct: 3.0, unsubs: 56, unsubPct: 0.7, revenue: '—' },
+  { id: 5, emoji: '🔧', name: 'Your MOT is Due — Book Online & Save 15%', type: 'ISV Triggered', date: '29 Apr 2025, 09:15', sent: 1847, opens: 892, openPct: 48.3, clicks: 334, bounces: 41, bouncePct: 2.2, unsubs: 9, unsubPct: 0.5, revenue: '£8,900' },
+  { id: 6, emoji: '💰', name: 'Finance That Works For You — Flexible PCP Deals', type: 'Promotional', date: '25 Apr 2025, 14:00', sent: 9214, opens: 2948, openPct: 32.0, clicks: 548, bounces: 321, bouncePct: 3.5, unsubs: 67, unsubPct: 0.7, revenue: '£28,500' },
+  { id: 7, emoji: '⭐', name: 'Summer Tyres & Alloys — Limited Stock', type: 'Service', date: '20 Apr 2025, 09:00', sent: 5134, opens: 1849, openPct: 36.0, clicks: 267, bounces: 154, bouncePct: 3.0, unsubs: 21, unsubPct: 0.4, revenue: '£5,700' },
+  { id: 8, emoji: '🎉', name: 'VIP Customer Appreciation Evening — RSVP Now', type: 'Event', date: '15 Apr 2025, 16:00', sent: 2103, opens: 987, openPct: 46.9, clicks: 198, bounces: 63, bouncePct: 3.0, unsubs: 11, unsubPct: 0.5, revenue: '£3,100' },
+];
+
+const recipients = [
+  { name: 'Sarah Mitchell', email: 's.mitchell@gmail.com', status: 'Delivered', bounceReason: '—', lastOpened: '12 May 09:47', opens: 4, clicks: 3, unsub: false },
+  { name: 'James Hartley', email: 'j.hartley@outlook.com', status: 'Delivered', bounceReason: '—', lastOpened: '12 May 10:12', opens: 2, clicks: 1, unsub: false },
+  { name: 'Emma Blackwood', email: 'e.blackwood@yahoo.co.uk', status: 'Hard Bounce', bounceReason: 'Invalid address', lastOpened: '—', opens: 0, clicks: 0, unsub: false },
+  { name: 'Oliver Davis', email: 'oliver.d@hotmail.com', status: 'Delivered', bounceReason: '—', lastOpened: '13 May 14:22', opens: 7, clicks: 5, unsub: false },
+  { name: 'Charlotte Green', email: 'c.green@icloud.com', status: 'Soft Bounce', bounceReason: 'Mailbox full', lastOpened: '—', opens: 0, clicks: 0, unsub: false },
+  { name: 'William Turner', email: 'wturner@gmail.com', status: 'Delivered', bounceReason: '—', lastOpened: '14 May 08:55', opens: 1, clicks: 0, unsub: true },
+  { name: 'Amelia Foster', email: 'a.foster@btinternet.com', status: 'Delivered', bounceReason: '—', lastOpened: '12 May 20:30', opens: 3, clicks: 2, unsub: false },
+  { name: 'Harry Thompson', email: 'h.thompson@sky.com', status: 'Delivered', bounceReason: '—', lastOpened: '15 May 11:05', opens: 2, clicks: 0, unsub: false },
+];
+
+let showPct = true;
+
+function setToggle(mode) {
+  showPct = mode === 'pct';
+  document.getElementById('pctBtn').classList.toggle('active', showPct);
+  document.getElementById('cntBtn').classList.toggle('active', !showPct);
+  document.querySelectorAll('.metric-value-pct').forEach(el => el.style.display = showPct ? 'block' : 'none');
+  document.querySelectorAll('.metric-value-count').forEach(el => el.style.display = !showPct ? 'block' : 'none');
+  document.querySelectorAll('.metric-sub.metric-value-pct').forEach(el => el.style.display = showPct ? 'block' : 'none');
+  document.querySelectorAll('.metric-sub.metric-value-count').forEach(el => el.style.display = !showPct ? 'block' : 'none');
+}
+
+function typeBadgeClass(type) {
+  const map = { 'Promotional': 'badge-promo', 'Service': 'badge-service', 'Event': 'badge-event', 'Newsletter': 'badge-newsletter', 'ISV Triggered': 'badge-triggered' };
+  return map[type] || 'badge-promo';
+}
+
+function renderCampaigns(list) {
+  const tbody = document.getElementById('campaignTableBody');
+  tbody.innerHTML = list.map(c => `
+    <tr onclick="goToCampaign(${c.id})">
+      <td>
+        <div class="campaign-info">
+          <div class="campaign-preview"><div class="campaign-preview-placeholder">${c.emoji}</div></div>
+          <div>
+            <div class="campaign-name">${c.name}</div>
+            <span class="campaign-type-badge ${typeBadgeClass(c.type)}">${c.type}</span>
+          </div>
+        </div>
+      </td>
+      <td class="stat-cell" style="white-space:nowrap; color: var(--slate)">${c.date}</td>
+      <td><div class="stat-cell">${c.sent.toLocaleString()}</div></td>
+      <td>
+        <div class="stat-cell">${showPct ? c.openPct + '%' : c.opens.toLocaleString()}</div>
+        <div class="rate-bar"><div class="rate-bar-fill bar-green" style="width:${c.openPct}%"></div></div>
+      </td>
+      <td><div class="stat-cell">${c.clicks.toLocaleString()}</div></td>
+      <td>
+        <div class="stat-cell ${c.bouncePct > 4 ? 'chip chip-red' : ''}">${showPct ? c.bouncePct + '%' : c.bounces.toLocaleString()}</div>
+        <div class="rate-bar"><div class="rate-bar-fill bar-red" style="width:${c.bouncePct * 10}%"></div></div>
+      </td>
+      <td><div class="stat-cell">${showPct ? c.unsubPct + '%' : c.unsubs}</div></td>
+      <td>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </td>
+    </tr>
+  `).join('');
+  document.getElementById('tableMetaText').textContent = `Showing ${list.length} campaigns`;
+}
+
+function filterCampaigns() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const type = document.getElementById('typeFilter').value;
+  let filtered = campaigns;
+  if (type) filtered = filtered.filter(c => c.type === type);
+  if (search) filtered = filtered.filter(c => c.name.toLowerCase().includes(search));
+  renderCampaigns(filtered);
+}
+
+function setTypeTab(el, type) {
+  document.querySelectorAll('.type-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('typeFilter').value = type;
+  filterCampaigns();
+}
+
+function renderRecipients() {
+  const tbody = document.getElementById('recipientTableBody');
+  tbody.innerHTML = recipients.map((r, i) => `
+    <tr onclick="openTray(${i})">
+      <td>
+        <div style="font-weight:600; font-size:13.5px; color:var(--navy)">${r.name}</div>
+        <div style="font-size:12px; color:var(--muted)">${r.email}</div>
+      </td>
+      <td>
+        <span class="chip ${r.status === 'Delivered' ? 'chip-green' : r.status === 'Hard Bounce' ? 'chip-red' : 'chip-orange'}">
+          ${r.status}
+        </span>
+      </td>
+      <td style="font-size:13px; color:var(--slate); white-space:nowrap">${r.lastOpened}</td>
+      <td class="stat-cell">${r.opens}</td>
+      <td class="stat-cell">${r.clicks}</td>
+      <td>${r.unsub ? '<span class="chip chip-red">Yes</span>' : '<span style="color:var(--muted);font-size:13px">No</span>'}</td>
+      <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></td>
+    </tr>
+  `).join('');
+}
+
+function goTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'overview') {
+    document.getElementById('breadcrumb').innerHTML = `<span class="breadcrumb-item current">Email Analytics</span>`;
+  }
+}
+
+let currentCampaign = null;
+
+function goToCampaign(id) {
+  currentCampaign = campaigns.find(c => c.id === id);
+  if (!currentCampaign) return;
+  const c = currentCampaign;
+  document.getElementById('detailPreview').textContent = c.emoji;
+  document.getElementById('detailName').textContent = c.name;
+  document.getElementById('detailDate').textContent = c.date;
+  document.getElementById('detailBadgeWrap').innerHTML = `<span class="campaign-type-badge ${typeBadgeClass(c.type)}">${c.type}</span>`;
+  document.getElementById('dm-sent').textContent = c.sent.toLocaleString();
+  document.getElementById('dm-delivery').textContent = ((c.sent - c.bounces) / c.sent * 100).toFixed(1) + '%';
+  document.getElementById('dm-delivery-sub').textContent = (c.sent - c.bounces).toLocaleString() + ' delivered';
+  document.getElementById('dm-opens').textContent = c.openPct + '%';
+  document.getElementById('dm-opens-sub').textContent = c.opens.toLocaleString() + ' opens';
+  document.getElementById('dm-bounces').textContent = c.bouncePct + '%';
+  document.getElementById('dm-bounces-sub').textContent = c.bounces.toLocaleString() + ' bounced';
+  document.getElementById('dm-unsubs').textContent = c.unsubPct + '%';
+  document.getElementById('dm-unsubs-sub').textContent = c.unsubs + ' unsubs';
+  document.getElementById('dm-revenue').textContent = c.revenue;
+  renderRecipients();
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-detail').classList.add('active');
+  document.getElementById('breadcrumb').innerHTML = `
+    <span class="breadcrumb-item" onclick="goTo('overview')">Email Analytics</span>
+    <span class="breadcrumb-sep">›</span>
+    <span class="breadcrumb-item current">${c.name.substring(0, 40)}…</span>
+  `;
+}
+
+function openTray(idx) {
+  const r = recipients[idx];
+  const initials = r.name.split(' ').map(n => n[0]).join('');
+  document.getElementById('trayAvatar').textContent = initials;
+  document.getElementById('trayName').textContent = r.name;
+  document.getElementById('trayEmail').textContent = r.email;
+  document.getElementById('trayMetrics').innerHTML = `
+    <div class="tray-metric">
+      <div class="tray-metric-val">${r.opens}</div>
+      <div class="tray-metric-label">Total Opens</div>
+    </div>
+    <div class="tray-metric">
+      <div class="tray-metric-val">${r.clicks}</div>
+      <div class="tray-metric-label">Total Clicks</div>
+    </div>
+    <div class="tray-metric">
+      <div class="tray-metric-val" style="color: ${r.status === 'Delivered' ? 'var(--success)' : 'var(--danger)'}">${r.status === 'Delivered' ? '✓' : '✗'}</div>
+      <div class="tray-metric-label">Deliverability</div>
+    </div>
+    <div class="tray-metric">
+      <div class="tray-metric-val" style="color: ${r.unsub ? 'var(--danger)' : 'var(--success)'}">${r.unsub ? 'Yes' : 'No'}</div>
+      <div class="tray-metric-label">Unsubscribed</div>
+    </div>
+  `;
+  document.getElementById('trayInfo').innerHTML = `
+    <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="chip ${r.status === 'Delivered' ? 'chip-green' : r.status === 'Hard Bounce' ? 'chip-red' : 'chip-orange'}">${r.status}</span></span></div>
+    <div class="info-row"><span class="info-key">Bounce Reason</span><span class="info-val">${r.bounceReason}</span></div>
+    <div class="info-row"><span class="info-key">Last Opened</span><span class="info-val">${r.lastOpened}</span></div>
+    <div class="info-row"><span class="info-key">Campaign</span><span class="info-val">${currentCampaign ? currentCampaign.name.substring(0,30) + '…' : '—'}</span></div>
+  `;
+  const timelineEvents = r.opens > 0 ? [
+    { cls: 'tl-sent', icon: '✉', label: 'Email Delivered', time: '12 May 2025, 09:00', detail: 'Delivered to inbox successfully' },
+    { cls: 'tl-opened', icon: '👁', label: 'First Opened', time: r.lastOpened, detail: 'Opened on mobile device · iOS Mail' },
+    ...(r.opens > 1 ? [{ cls: 'tl-opened', icon: '👁', label: `Opened again (×${r.opens - 1})`, time: '13–15 May 2025', detail: `${r.opens} total opens recorded` }] : []),
+    ...(r.clicks > 0 ? [{ cls: 'tl-clicked', icon: '🔗', label: `Clicked ${r.clicks} link${r.clicks > 1 ? 's' : ''}`, time: '12 May 2025, 09:52', detail: 'Clicked: "Book your service online"' }] : []),
+  ] : [
+    { cls: 'tl-sent', icon: '✉', label: 'Email Sent', time: '12 May 2025, 09:00', detail: 'Send attempted' },
+    { cls: 'tl-bounced', icon: '✗', label: 'Bounced', time: '12 May 2025, 09:01', detail: r.bounceReason || 'Delivery failed' },
+  ];
+  document.getElementById('trayTimeline').innerHTML = timelineEvents.map(e => `
+    <div class="timeline-item">
+      <div class="timeline-dot ${e.cls}">${e.icon}</div>
+      <div class="timeline-content">
+        <div class="timeline-event">${e.label}</div>
+        <div class="timeline-time">${e.time}</div>
+        <div class="timeline-detail">${e.detail}</div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('trayOverlay').classList.add('open');
+  document.getElementById('sideTray').classList.add('open');
+}
+
+function closeTray() {
+  document.getElementById('trayOverlay').classList.remove('open');
+  document.getElementById('sideTray').classList.remove('open');
+}
+
+function exportCSV() { alert('Exporting campaign data to CSV…'); }
+function exportPDF() { alert('Generating PDF report…'); }
+function previewEmail() { alert('Loading email preview…'); }
+
+// Init
+renderCampaigns(campaigns);
+setToggle('pct');
+</script>
+</body>
+</html>

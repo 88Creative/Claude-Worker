@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Analytics — The Exchange (Version 2: Minimal Immersive)</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #D94B2B;
+    --red-dark: #B83A20;
+    --red-light: #FDF1EE;
+    --navy: #0B1929;
+    --navy-2: #162436;
+    --slate: #3D5166;
+    --muted: #7A8FA3;
+    --border: #E4EBF2;
+    --border-light: #F0F5FA;
+    --surface: #F8FAFB;
+    --white: #FFFFFF;
+    --green: #059669;
+    --green-bg: #ECFDF5;
+    --orange: #D97706;
+    --orange-bg: #FFFBEB;
+    --danger: #DC2626;
+    --danger-bg: #FEF2F2;
+    --blue: #1D6FD8;
+    --blue-bg: #EEF5FD;
+    --purple: #7C3AED;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --r-xs: 6px;
+    --r-sm: 10px;
+    --r: 14px;
+    --r-lg: 20px;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-sm: 0 2px 8px rgba(11,25,41,0.07), 0 1px 3px rgba(11,25,41,0.04);
+    --shadow-md: 0 8px 24px rgba(11,25,41,0.09), 0 3px 10px rgba(11,25,41,0.05);
+    --shadow-lg: 0 24px 64px rgba(11,25,41,0.14), 0 8px 28px rgba(11,25,41,0.08);
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font);
+    background: #EEF2F7;
+    color: var(--navy);
+    font-size: 14px;
+    line-height: 1.5;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 72px;
+    flex-shrink: 0;
+    background: var(--navy);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 20;
+    gap: 4px;
+  }
+  .sidebar-logo {
+    width: 40px; height: 40px;
+    background: var(--red);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px; color: white;
+    margin-bottom: 20px;
+    letter-spacing: -0.5px;
+  }
+  .nav-icon-btn {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: rgba(255,255,255,0.4);
+    transition: all 0.15s; position: relative;
+  }
+  .nav-icon-btn:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+  .nav-icon-btn.active { background: rgba(217,75,43,0.2); color: var(--red); }
+  .nav-icon-btn svg { width: 20px; height: 20px; }
+  .nav-icon-btn .tooltip {
+    position: absolute; left: calc(100% + 12px); top: 50%; transform: translateY(-50%);
+    background: var(--navy-2); color: white; font-size: 12px; font-weight: 600;
+    padding: 5px 10px; border-radius: 6px; white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: opacity 0.15s;
+    box-shadow: var(--shadow-md);
+  }
+  .nav-icon-btn:hover .tooltip { opacity: 1; }
+  .sidebar-spacer { flex: 1; }
+  .sidebar-avatar { width: 36px; height: 36px; border-radius: 10px; background: var(--slate); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: white; cursor: pointer; margin-top: 8px; }
+
+  /* ── EXPANDED SIDEBAR (hover area) ── */
+  .sidebar-extended {
+    position: fixed; top: 0; left: 72px; bottom: 0;
+    width: 200px;
+    background: var(--navy-2);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    z-index: 19;
+    transform: translateX(-100%);
+    transition: transform 0.2s cubic-bezier(0.16,1,0.3,1);
+    padding: 20px 12px;
+    display: flex; flex-direction: column;
+  }
+  .sidebar:hover ~ .sidebar-extended,
+  .sidebar-extended:hover { transform: translateX(0); }
+  .ext-section { margin-bottom: 20px; }
+  .ext-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.8px; padding: 0 8px 6px; }
+  .ext-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 8px;
+    font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.5);
+    cursor: pointer; transition: all 0.12s;
+  }
+  .ext-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+  .ext-item.active { background: rgba(217,75,43,0.15); color: var(--red); }
+  .ext-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.2); flex-shrink: 0; }
+  .ext-item.active .ext-dot { background: var(--red); }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    margin-left: 72px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
+    box-shadow: var(--shadow-xs);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 0; }
+  .breadcrumb { display: flex; align-items: center; gap: 2px; }
+  .bc-item {
+    display: flex; align-items: center; gap: 2px;
+    font-size: 13px; color: var(--muted); cursor: pointer;
+    padding: 4px 8px; border-radius: 6px; transition: all 0.12s;
+    font-weight: 500;
+  }
+  .bc-item:hover { color: var(--navy); background: var(--surface); }
+  .bc-item.current { color: var(--navy); font-weight: 700; }
+  .bc-sep { color: var(--border); margin: 0 2px; font-size: 18px; line-height: 1; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: var(--r-sm);
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    border: none; transition: all 0.15s; font-family: var(--font);
+  }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-outline {
+    background: var(--white); color: var(--slate);
+    border: 1.5px solid var(--border);
+  }
+  .btn-outline:hover { border-color: var(--muted); color: var(--navy); background: var(--surface); }
+  .btn-dark { background: var(--navy); color: white; }
+  .btn-dark:hover { background: var(--navy-2); }
+  .btn-accent { background: var(--red); color: white; }
+  .btn-accent:hover { background: var(--red-dark); }
+  .btn-sm { padding: 6px 12px; font-size: 12.5px; }
+  .topbar-divider { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+
+  /* ── PAGES ── */
+  .page { display: none; flex: 1; flex-direction: column; }
+  .page.active { display: flex; }
+
+  /* ── OVERVIEW HERO ── */
+  .overview-hero {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 32px 0;
+  }
+  .hero-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
+  .hero-headline { font-size: 28px; font-weight: 900; color: var(--navy); letter-spacing: -1px; }
+  .hero-sub { font-size: 14px; color: var(--muted); margin-top: 4px; font-weight: 400; }
+  .hero-controls { display: flex; align-items: center; gap: 8px; }
+  .toggle-pill {
+    display: flex; background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 8px; overflow: hidden;
+  }
+  .toggle-pill-btn {
+    padding: 6px 14px; font-size: 12.5px; font-weight: 700;
+    cursor: pointer; background: transparent; border: none;
+    color: var(--muted); font-family: var(--font); transition: all 0.15s;
+  }
+  .toggle-pill-btn.active { background: var(--navy); color: white; }
+
+  /* Hero metrics */
+  .hero-metrics {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--border);
+  }
+  .hm-cell {
+    padding: 20px 20px 24px;
+    border-right: 1px solid var(--border);
+    position: relative;
+    cursor: default;
+    transition: background 0.15s;
+  }
+  .hm-cell:last-child { border-right: none; }
+  .hm-cell:hover { background: var(--surface); }
+  .hm-cell::after {
+    content: ''; position: absolute; bottom: 0; left: 20px; right: 20px;
+    height: 2px; background: transparent;
+    transition: background 0.15s;
+  }
+  .hm-cell:hover::after { background: var(--navy); }
+  .hm-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+  .hm-value { font-size: 30px; font-weight: 900; color: var(--navy); letter-spacing: -1.5px; line-height: 1; }
+  .hm-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .hm-trend { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+  .trend-up { font-size: 11.5px; font-weight: 700; color: var(--green); }
+  .trend-down { font-size: 11.5px; font-weight: 700; color: var(--danger); }
+  .trend-arrow-up { color: var(--green); font-size: 13px; }
+  .trend-arrow-down { color: var(--danger); font-size: 13px; }
+
+  /* ── OVERVIEW BODY ── */
+  .overview-body { padding: 24px 32px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+  /* Filters bar */
+  .filters-bar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 300px; }
+  .search-wrap input {
+    width: 100%; padding: 9px 14px 9px 38px;
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: var(--r-sm); font-size: 13px; font-family: var(--font);
+    color: var(--navy); outline: none; transition: all 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(11,25,41,0.06); }
+  .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); width: 15px; height: 15px; }
+  .select-styled {
+    padding: 9px 30px 9px 12px;
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: var(--r-sm); font-size: 13px; font-family: var(--font);
+    color: var(--slate); outline: none; cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%237A8FA3' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    transition: border-color 0.15s;
+  }
+  .select-styled:focus { border-color: var(--navy); }
+  .filter-chips { display: flex; gap: 6px; }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 12.5px; font-weight: 600; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--white);
+    color: var(--slate); transition: all 0.15s;
+  }
+  .filter-chip:hover { border-color: var(--navy); color: var(--navy); }
+  .filter-chip.active { background: var(--navy); color: white; border-color: var(--navy); }
+  .filter-chip .chip-n { font-size: 11px; opacity: 0.7; margin-left: 3px; }
+
+  /* Campaign cards grid */
+  .campaigns-grid { display: flex; flex-direction: column; gap: 0; }
+  .cg-header {
+    display: grid;
+    grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr 1fr 40px;
+    padding: 9px 20px; gap: 12px;
+    border: 1.5px solid var(--border);
+    border-bottom: none;
+    border-radius: var(--r) var(--r) 0 0;
+    background: var(--surface);
+  }
+  .cg-th { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px; cursor: pointer; }
+  .cg-th:hover { color: var(--navy); }
+  .cg-rows { border: 1.5px solid var(--border); border-radius: 0 0 var(--r) var(--r); overflow: hidden; background: var(--white); }
+  .cg-row {
+    display: grid;
+    grid-template-columns: 2.5fr 1fr 1fr 1fr 1fr 1fr 40px;
+    padding: 16px 20px; gap: 12px;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    align-items: center;
+    transition: background 0.12s;
+  }
+  .cg-row:last-child { border-bottom: none; }
+  .cg-row:hover { background: #F4F8FC; }
+  .cg-campaign { display: flex; align-items: center; gap: 14px; }
+  .cg-thumb {
+    width: 56px; height: 38px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--surface), var(--border-light));
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0; overflow: hidden;
+  }
+  .cg-name { font-size: 13.5px; font-weight: 600; color: var(--navy); line-height: 1.3; margin-bottom: 3px; }
+  .cg-meta { display: flex; align-items: center; gap: 6px; }
+  .cg-badge {
+    font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .b-promo { background: #EEF5FD; color: #1D6FD8; }
+  .b-service { background: var(--green-bg); color: var(--green); }
+  .b-event { background: #F5F3FF; color: var(--purple); }
+  .b-news { background: var(--orange-bg); color: var(--orange); }
+  .b-isv { background: #F0F9FF; color: #0369A1; }
+  .cg-date { font-size: 12px; color: var(--muted); }
+  .cg-stat { }
+  .cg-stat-val { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .cg-stat-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+  .cg-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 5px; overflow: hidden; width: 48px; }
+  .cg-bar-fill { height: 100%; border-radius: 2px; }
+  .cg-arr { color: var(--border); transition: color 0.15s; }
+  .cg-row:hover .cg-arr { color: var(--muted); }
+
+  /* ── CAMPAIGN DETAIL ── */
+  .detail-header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 32px;
+  }
+  .dh-top { display: flex; gap: 20px; align-items: flex-start; }
+  .dh-thumb {
+    width: 80px; height: 54px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--surface), var(--border-light));
+    border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; flex-shrink: 0;
+  }
+  .dh-info { flex: 1; }
+  .dh-title { font-size: 22px; font-weight: 900; color: var(--navy); letter-spacing: -0.5px; margin-bottom: 6px; }
+  .dh-metas { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  .dh-meta { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted); }
+  .dh-meta strong { color: var(--slate); font-weight: 600; }
+  .dh-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: flex-start; }
+
+  /* Detail metric row */
+  .detail-kpis {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    background: var(--white); border-bottom: 1px solid var(--border);
+  }
+  .dkpi {
+    padding: 20px 24px;
+    border-right: 1px solid var(--border);
+    position: relative;
+  }
+  .dkpi:last-child { border-right: none; }
+  .dkpi-accent { position: absolute; top: 0; left: 24px; right: 24px; height: 2px; border-radius: 0 0 2px 2px; }
+  .dkpi-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .dkpi-value { font-size: 26px; font-weight: 900; color: var(--navy); letter-spacing: -1px; }
+  .dkpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* Detail body */
+  .detail-body { padding: 24px 32px; display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+
+  .panel {
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: var(--r); overflow: hidden;
+  }
+  .panel-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .panel-body { padding: 0; }
+
+  /* Engagement table */
+  table { width: 100%; border-collapse: collapse; }
+  .etable thead th {
+    padding: 9px 16px;
+    background: var(--surface); font-size: 11px; font-weight: 700;
+    color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+    text-align: left; border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .etable thead th:first-child { padding-left: 20px; }
+  .etable tbody tr {
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer; transition: background 0.12s;
+  }
+  .etable tbody tr:last-child { border-bottom: none; }
+  .etable tbody tr:hover { background: var(--surface); }
+  .etable tbody td { padding: 13px 16px; vertical-align: middle; }
+  .etable tbody td:first-child { padding-left: 20px; }
+
+  .r-name { font-size: 13.5px; font-weight: 600; color: var(--navy); margin-bottom: 2px; }
+  .r-email { font-size: 12px; color: var(--muted); }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+  }
+  .sp-green { background: var(--green-bg); color: var(--green); }
+  .sp-red { background: var(--danger-bg); color: var(--danger); }
+  .sp-orange { background: var(--orange-bg); color: var(--orange); }
+  .stat-num { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .stat-dim { font-size: 12px; color: var(--muted); }
+
+  /* Deliverability side panel */
+  .deliv-panel { display: flex; flex-direction: column; gap: 16px; }
+  .deliv-donut { padding: 24px 20px 16px; display: flex; flex-direction: column; align-items: center; }
+  .donut-ring { position: relative; width: 130px; height: 130px; margin-bottom: 16px; }
+  .donut-ring svg { transform: rotate(-90deg); }
+  .donut-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+  .dc-pct { font-size: 26px; font-weight: 900; color: var(--navy); letter-spacing: -1px; }
+  .dc-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+  .deliv-legs { width: 100%; }
+  .dl-item { display: flex; align-items: center; gap: 10px; padding: 8px 20px; border-top: 1px solid var(--border-light); }
+  .dl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dl-name { flex: 1; font-size: 13px; color: var(--slate); }
+  .dl-val { font-size: 13px; font-weight: 700; color: var(--navy); }
+  .dl-pct { font-size: 12px; color: var(--muted); margin-left: 6px; }
+
+  .bounce-table { padding: 0; }
+  .bounce-table .bt-row { display: flex; align-items: center; padding: 10px 20px; border-top: 1px solid var(--border-light); gap: 10px; }
+  .bt-label { flex: 1; font-size: 13px; color: var(--slate); }
+  .bt-count { font-size: 13px; font-weight: 700; color: var(--navy); }
+  .bt-bar-wrap { width: 60px; }
+  .bt-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .bt-bar-fill { height: 100%; border-radius: 2px; background: var(--danger); }
+
+  /* ── SIDE TRAY ── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(11,25,41,0.4);
+    z-index: 50;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    backdrop-filter: blur(2px);
+  }
+  .overlay.open { opacity: 1; pointer-events: all; }
+  .tray {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 480px;
+    background: var(--white);
+    z-index: 51;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; flex-direction: column;
+    box-shadow: var(--shadow-lg);
+  }
+  .tray.open { transform: translateX(0); }
+  .tray-top {
+    padding: 0;
+    background: var(--navy);
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .tray-top::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 160px; height: 160px; border-radius: 50%;
+    background: rgba(217,75,43,0.15);
+  }
+  .tray-top-inner { padding: 24px; position: relative; z-index: 1; }
+  .tray-close-btn {
+    position: absolute; top: 16px; right: 16px;
+    width: 30px; height: 30px; border-radius: 8px;
+    background: rgba(255,255,255,0.1); border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: rgba(255,255,255,0.7);
+    transition: all 0.15s; z-index: 2;
+  }
+  .tray-close-btn:hover { background: rgba(255,255,255,0.2); color: white; }
+  .tray-person-initial {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 800; color: white;
+    margin-bottom: 12px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+  }
+  .tray-person-name { font-size: 18px; font-weight: 800; color: white; letter-spacing: -0.5px; }
+  .tray-person-email { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 3px; }
+  .tray-status-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+  .tray-status-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+    background: rgba(255,255,255,0.12); color: white;
+  }
+  .tray-status-chip.delivered { background: rgba(5,150,105,0.25); color: #6EE7B7; }
+  .tray-status-chip.bounced { background: rgba(220,38,38,0.25); color: #FCA5A5; }
+  .tray-body { flex: 1; overflow-y: auto; }
+  .tray-section { padding: 20px 24px; border-bottom: 1px solid var(--border-light); }
+  .ts-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.7px; color: var(--muted); margin-bottom: 12px; }
+  .tray-kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tray-kpi {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: var(--r-sm); padding: 14px;
+  }
+  .tray-kpi-val { font-size: 22px; font-weight: 900; color: var(--navy); letter-spacing: -0.5px; }
+  .tray-kpi-label { font-size: 11.5px; color: var(--muted); font-weight: 500; margin-top: 3px; }
+  .info-list { display: flex; flex-direction: column; gap: 0; }
+  .il-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+  .il-row:last-child { border-bottom: none; }
+  .il-key { font-size: 13px; color: var(--muted); }
+  .il-val { font-size: 13px; font-weight: 600; color: var(--navy); text-align: right; }
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item { display: flex; gap: 14px; padding-bottom: 18px; position: relative; }
+  .tl-item:not(:last-child)::before {
+    content: ''; position: absolute;
+    left: 14px; top: 30px; bottom: 0;
+    width: 1px; background: var(--border);
+  }
+  .tl-icon { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; margin-top: 2px; }
+  .tl-i-blue { background: var(--blue-bg); }
+  .tl-i-green { background: var(--green-bg); }
+  .tl-i-red { background: var(--danger-bg); }
+  .tl-content { flex: 1; }
+  .tl-event { font-size: 13.5px; font-weight: 600; color: var(--navy); }
+  .tl-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tl-note { font-size: 12.5px; color: var(--slate); margin-top: 6px; background: var(--surface); border: 1px solid var(--border); padding: 8px 10px; border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">EX</div>
+  <div class="nav-icon-btn" title="Home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+    <span class="tooltip">Home</span>
+  </div>
+  <div class="nav-icon-btn" title="Print">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    <span class="tooltip">Print centre</span>
+  </div>
+  <div class="nav-icon-btn" title="Flyers">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <span class="tooltip">Flyers</span>
+  </div>
+  <div class="nav-icon-btn active" title="Emails">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+    <span class="tooltip">Emails</span>
+  </div>
+  <div class="nav-icon-btn" title="Brands">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    <span class="tooltip">Brands</span>
+  </div>
+  <div class="nav-icon-btn" title="Assets">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span class="tooltip">Explore assets</span>
+  </div>
+  <div class="sidebar-spacer"></div>
+  <div class="nav-icon-btn" title="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span class="tooltip">Settings</span>
+  </div>
+  <div class="sidebar-avatar">CT</div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb" id="breadcrumb">
+        <div class="bc-item current" onclick="goTo('overview')">Email Analytics</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-outline" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+      <div class="topbar-divider"></div>
+      <button class="btn btn-accent">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 0 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        View CJA Report
+      </button>
+    </div>
+  </div>
+
+  <!-- PAGE: OVERVIEW -->
+  <div class="page active" id="page-overview">
+    <!-- Hero band with metrics -->
+    <div class="overview-hero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-headline">Email Analytics</div>
+          <div class="hero-sub">Performance across all campaigns sent through The Exchange</div>
+        </div>
+        <div class="hero-controls">
+          <select class="select-styled" id="heroDate" onchange="void(0)">
+            <option value="30" selected>Last 30 days</option>
+            <option value="7">Last 7 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last 12 months</option>
+          </select>
+          <div class="toggle-pill">
+            <button class="toggle-pill-btn active" id="pctBtn" onclick="setToggle('pct')">%</button>
+            <button class="toggle-pill-btn" id="cntBtn" onclick="setToggle('count')">#</button>
+          </div>
+        </div>
+      </div>
+      <div class="hero-metrics">
+        <div class="hm-cell">
+          <div class="hm-label">Campaigns</div>
+          <div class="hm-value">47</div>
+          <div class="hm-sub">across 5 types</div>
+          <div class="hm-trend"><span class="trend-arrow-up">↑</span><span class="trend-up">12%</span><span style="font-size:11.5px;color:var(--muted)"> vs prev</span></div>
+        </div>
+        <div class="hm-cell">
+          <div class="hm-label">Emails Sent</div>
+          <div class="hm-value">284K</div>
+          <div class="hm-sub">284,219 total</div>
+          <div class="hm-trend"><span class="trend-arrow-up">↑</span><span class="trend-up">8.4%</span></div>
+        </div>
+        <div class="hm-cell">
+          <div class="hm-label">Delivery</div>
+          <div class="hm-value pct-val">96.8%</div>
+          <div class="hm-value cnt-val" style="display:none">275K</div>
+          <div class="hm-sub pct-sub">275,100 delivered</div>
+          <div class="hm-sub cnt-sub" style="display:none">275,100 delivered</div>
+          <div class="hm-trend"><span class="trend-arrow-up">↑</span><span class="trend-up">1.2%</span></div>
+        </div>
+        <div class="hm-cell">
+          <div class="hm-label">Open Rate</div>
+          <div class="hm-value pct-val" style="color:var(--blue)">34.2%</div>
+          <div class="hm-value cnt-val" style="display:none; color:var(--blue)">94.1K</div>
+          <div class="hm-sub pct-sub">94,122 opens</div>
+          <div class="hm-sub cnt-sub" style="display:none">94,122 opens</div>
+          <div class="hm-trend"><span class="trend-arrow-up">↑</span><span class="trend-up">3.7%</span></div>
+        </div>
+        <div class="hm-cell">
+          <div class="hm-label">Bounce Rate</div>
+          <div class="hm-value pct-val" style="color:var(--orange)">3.2%</div>
+          <div class="hm-value cnt-val" style="display:none; color:var(--orange)">9,095</div>
+          <div class="hm-sub pct-sub">9,095 bounced</div>
+          <div class="hm-sub cnt-sub" style="display:none">9,095 of 284,219</div>
+          <div class="hm-trend"><span class="trend-arrow-down">↑</span><span class="trend-down">0.4%</span></div>
+        </div>
+        <div class="hm-cell">
+          <div class="hm-label">Unsubscribes</div>
+          <div class="hm-value pct-val" style="color:var(--danger)">0.8%</div>
+          <div class="hm-value cnt-val" style="display:none; color:var(--danger)">2,274</div>
+          <div class="hm-sub pct-sub">2,274 unsubs</div>
+          <div class="hm-sub cnt-sub" style="display:none">2,274 of 284,219</div>
+          <div class="hm-trend"><span class="trend-arrow-down">↑</span><span class="trend-down">0.1%</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="overview-body">
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Search campaigns…" id="searchInput" oninput="filterCampaigns()">
+        </div>
+        <select class="select-styled" id="typeFilter" onchange="filterCampaigns()">
+          <option value="">All types</option>
+          <option value="Promotional">Promotional</option>
+          <option value="Service">Service</option>
+          <option value="Event">Event</option>
+          <option value="Newsletter">Newsletter</option>
+          <option value="ISV Triggered">ISV Triggered</option>
+        </select>
+        <div class="filter-chips" id="typeChips">
+          <div class="filter-chip active" onclick="setChip(this, '')">All <span class="chip-n">47</span></div>
+          <div class="filter-chip" onclick="setChip(this, 'Promotional')">Promotional <span class="chip-n">18</span></div>
+          <div class="filter-chip" onclick="setChip(this, 'Service')">Service <span class="chip-n">12</span></div>
+          <div class="filter-chip" onclick="setChip(this, 'Event')">Event <span class="chip-n">7</span></div>
+          <div class="filter-chip" onclick="setChip(this, 'Newsletter')">Newsletter <span class="chip-n">6</span></div>
+          <div class="filter-chip" onclick="setChip(this, 'ISV Triggered')">ISV Triggered <span class="chip-n">4</span></div>
+        </div>
+      </div>
+
+      <!-- Campaign list -->
+      <div>
+        <div class="cg-header">
+          <div class="cg-th">Campaign</div>
+          <div class="cg-th">Sent <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div>
+          <div class="cg-th">Opens</div>
+          <div class="cg-th">Clicks</div>
+          <div class="cg-th">Bounces</div>
+          <div class="cg-th">Unsubs</div>
+          <div></div>
+        </div>
+        <div class="cg-rows" id="campaignRows"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: CAMPAIGN DETAIL -->
+  <div class="page" id="page-detail">
+    <!-- Header -->
+    <div class="detail-header">
+      <div class="dh-top">
+        <div class="dh-thumb" id="dThumb">📧</div>
+        <div class="dh-info">
+          <div class="dh-title" id="dTitle">Campaign Name</div>
+          <div class="dh-metas">
+            <div class="dh-meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> <strong id="dDate">—</strong></div>
+            <div class="dh-meta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> <strong>All subscribers</strong></div>
+            <div id="dBadge"></div>
+          </div>
+        </div>
+        <div class="dh-actions">
+          <button class="btn btn-outline btn-sm" onclick="previewEmail()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview
+          </button>
+          <button class="btn btn-dark btn-sm" onclick="exportPDF()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Export PDF
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="detail-kpis">
+      <div class="dkpi">
+        <div class="dkpi-accent" style="background: var(--blue)"></div>
+        <div class="dkpi-label">Emails Sent</div>
+        <div class="dkpi-value" id="dk-sent">—</div>
+      </div>
+      <div class="dkpi">
+        <div class="dkpi-accent" style="background: var(--green)"></div>
+        <div class="dkpi-label">Delivered</div>
+        <div class="dkpi-value" style="color:var(--green)" id="dk-del">—</div>
+        <div class="dkpi-sub" id="dk-del-sub">—</div>
+      </div>
+      <div class="dkpi">
+        <div class="dkpi-accent" style="background: #60A5FA"></div>
+        <div class="dkpi-label">Open Rate</div>
+        <div class="dkpi-value" style="color:var(--blue)" id="dk-opens">—</div>
+        <div class="dkpi-sub" id="dk-opens-sub">—</div>
+      </div>
+      <div class="dkpi">
+        <div class="dkpi-accent" style="background: var(--orange)"></div>
+        <div class="dkpi-label">Bounces</div>
+        <div class="dkpi-value" style="color:var(--orange)" id="dk-bounce">—</div>
+        <div class="dkpi-sub" id="dk-bounce-sub">—</div>
+      </div>
+      <div class="dkpi">
+        <div class="dkpi-accent" style="background: var(--danger)"></div>
+        <div class="dkpi-label">Unsubscribes</div>
+        <div class="dkpi-value" style="color:var(--danger)" id="dk-unsub">—</div>
+        <div class="dkpi-sub" id="dk-unsub-sub">—</div>
+      </div>
+      <div class="dkpi">
+        <div class="dkpi-accent" style="background: var(--green)"></div>
+        <div class="dkpi-label">Revenue</div>
+        <div class="dkpi-value" style="color:var(--green)" id="dk-rev">—</div>
+        <div class="dkpi-sub">attributed</div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="detail-body">
+      <!-- Engagement table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recipient Engagement</div>
+          <div style="display:flex; gap:6px;">
+            <button class="filter-chip active btn-sm" style="padding:5px 12px; font-size:12px;">All</button>
+            <button class="filter-chip btn-sm" style="padding:5px 12px; font-size:12px;">Opened</button>
+            <button class="filter-chip btn-sm" style="padding:5px 12px; font-size:12px;">Bounced</button>
+            <button class="filter-chip btn-sm" style="padding:5px 12px; font-size:12px;">Unsub'd</button>
+          </div>
+        </div>
+        <table class="etable">
+          <thead>
+            <tr>
+              <th>Recipient</th>
+              <th>Status</th>
+              <th>Last Opened</th>
+              <th>Opens</th>
+              <th>Clicks</th>
+              <th>Unsub</th>
+            </tr>
+          </thead>
+          <tbody id="recipientBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Right column: deliverability -->
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Deliverability</div>
+          </div>
+          <div class="deliv-donut">
+            <div class="donut-ring">
+              <svg width="130" height="130" viewBox="0 0 130 130">
+                <circle cx="65" cy="65" r="52" fill="none" stroke="#E4EBF2" stroke-width="14"/>
+                <circle cx="65" cy="65" r="52" fill="none" stroke="#059669" stroke-width="14"
+                  stroke-dasharray="320 7" stroke-linecap="round"/>
+              </svg>
+              <div class="donut-center">
+                <div class="dc-pct">97.1%</div>
+                <div class="dc-label">Delivered</div>
+              </div>
+            </div>
+          </div>
+          <div class="deliv-legs">
+            <div class="dl-item">
+              <div class="dl-dot" style="background:var(--green)"></div>
+              <div class="dl-name">Delivered</div>
+              <div class="dl-val">5,786</div>
+              <div class="dl-pct">97.1%</div>
+            </div>
+            <div class="dl-item">
+              <div class="dl-dot" style="background:var(--danger)"></div>
+              <div class="dl-name">Hard Bounce</div>
+              <div class="dl-val">98</div>
+              <div class="dl-pct">1.6%</div>
+            </div>
+            <div class="dl-item">
+              <div class="dl-dot" style="background:var(--orange)"></div>
+              <div class="dl-name">Soft Bounce</div>
+              <div class="dl-val">76</div>
+              <div class="dl-pct">1.3%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Bounce Reasons</div>
+          </div>
+          <div>
+            <div class="bt-row">
+              <div class="bt-label">Invalid address</div>
+              <div class="bt-count">67</div>
+              <div class="bt-bar-wrap"><div class="bt-bar"><div class="bt-bar-fill" style="width:68%"></div></div></div>
+            </div>
+            <div class="bt-row">
+              <div class="bt-label">Mailbox full</div>
+              <div class="bt-count">41</div>
+              <div class="bt-bar-wrap"><div class="bt-bar"><div class="bt-bar-fill" style="width:42%;background:var(--orange)"></div></div></div>
+            </div>
+            <div class="bt-row">
+              <div class="bt-label">Server timeout</div>
+              <div class="bt-count">35</div>
+              <div class="bt-bar-wrap"><div class="bt-bar"><div class="bt-bar-fill" style="width:35%;background:var(--orange)"></div></div></div>
+            </div>
+            <div class="bt-row">
+              <div class="bt-label">Domain not found</div>
+              <div class="bt-count">31</div>
+              <div class="bt-bar-wrap"><div class="bt-bar"><div class="bt-bar-fill" style="width:31%;background:var(--muted)"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- OVERLAY + TRAY -->
+<div class="overlay" id="overlay" onclick="closeTray()"></div>
+<aside class="tray" id="tray">
+  <div class="tray-top">
+    <button class="tray-close-btn" onclick="closeTray()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="tray-top-inner">
+      <div class="tray-person-initial" id="trayInit">JD</div>
+      <div class="tray-person-name" id="trayName">John Doe</div>
+      <div class="tray-person-email" id="trayEmail">john@email.com</div>
+      <div class="tray-status-row">
+        <div class="tray-status-chip delivered" id="trayStatusChip">✓ Delivered</div>
+      </div>
+    </div>
+  </div>
+  <div class="tray-body">
+    <div class="tray-section">
+      <div class="ts-label">Engagement</div>
+      <div class="tray-kpi-grid" id="trayKpis"></div>
+    </div>
+    <div class="tray-section">
+      <div class="ts-label">Recipient Details</div>
+      <div class="info-list" id="trayDetails"></div>
+    </div>
+    <div class="tray-section" style="border-bottom:none">
+      <div class="ts-label">Activity Timeline</div>
+      <div class="timeline" id="trayTimeline"></div>
+    </div>
+  </div>
+</aside>
+
+<script>
+const campaigns = [
+  { id: 1, emoji: '🚗', name: 'Spring Service Special — Full Vehicle Health Check', type: 'Service', date: '12 May 2025, 09:00', sent: 6024, opens: 2389, openPct: 39.7, clicks: 412, bounces: 187, bouncePct: 3.1, unsubs: 24, unsubPct: 0.4, revenue: '£12,400' },
+  { id: 2, emoji: '🏎️', name: 'New Arrivals: Spring 2025 Range — Exclusive Preview', type: 'Promotional', date: '8 May 2025, 10:30', sent: 8741, opens: 3148, openPct: 36.0, clicks: 621, bounces: 214, bouncePct: 2.4, unsubs: 41, unsubPct: 0.5, revenue: '£34,800' },
+  { id: 3, emoji: '📅', name: 'Dealer Open Day — Saturday 17 May, Join Us!', type: 'Event', date: '5 May 2025, 08:00', sent: 4512, opens: 1624, openPct: 36.0, clicks: 289, bounces: 162, bouncePct: 3.6, unsubs: 18, unsubPct: 0.4, revenue: '£6,200' },
+  { id: 4, emoji: '📰', name: 'May Dealer Digest — News, Offers & Updates', type: 'Newsletter', date: '1 May 2025, 11:00', sent: 7823, opens: 2192, openPct: 28.0, clicks: 187, bounces: 234, bouncePct: 3.0, unsubs: 56, unsubPct: 0.7, revenue: '—' },
+  { id: 5, emoji: '🔧', name: 'Your MOT is Due — Book Online & Save 15%', type: 'ISV Triggered', date: '29 Apr 2025, 09:15', sent: 1847, opens: 892, openPct: 48.3, clicks: 334, bounces: 41, bouncePct: 2.2, unsubs: 9, unsubPct: 0.5, revenue: '£8,900' },
+  { id: 6, emoji: '💰', name: 'Finance That Works For You — Flexible PCP Deals', type: 'Promotional', date: '25 Apr 2025, 14:00', sent: 9214, opens: 2948, openPct: 32.0, clicks: 548, bounces: 321, bouncePct: 3.5, unsubs: 67, unsubPct: 0.7, revenue: '£28,500' },
+  { id: 7, emoji: '⭐', name: 'Summer Tyres & Alloys — Limited Stock', type: 'Service', date: '20 Apr 2025, 09:00', sent: 5134, opens: 1849, openPct: 36.0, clicks: 267, bounces: 154, bouncePct: 3.0, unsubs: 21, unsubPct: 0.4, revenue: '£5,700' },
+  { id: 8, emoji: '🎉', name: 'VIP Customer Appreciation Evening — RSVP Now', type: 'Event', date: '15 Apr 2025, 16:00', sent: 2103, opens: 987, openPct: 46.9, clicks: 198, bounces: 63, bouncePct: 3.0, unsubs: 11, unsubPct: 0.5, revenue: '£3,100' },
+];
+
+const recipients = [
+  { name: 'Sarah Mitchell', email: 's.mitchell@gmail.com', status: 'Delivered', bounceReason: '—', lastOpened: '12 May 09:47', opens: 4, clicks: 3, unsub: false },
+  { name: 'James Hartley', email: 'j.hartley@outlook.com', status: 'Delivered', bounceReason: '—', lastOpened: '12 May 10:12', opens: 2, clicks: 1, unsub: false },
+  { name: 'Emma Blackwood', email: 'e.blackwood@yahoo.co.uk', status: 'Hard Bounce', bounceReason: 'Invalid address', lastOpened: '—', opens: 0, clicks: 0, unsub: false },
+  { name: 'Oliver Davis', email: 'oliver.d@hotmail.com', status: 'Delivered', bounceReason: '—', lastOpened: '13 May 14:22', opens: 7, clicks: 5, unsub: false },
+  { name: 'Charlotte Green', email: 'c.green@icloud.com', status: 'Soft Bounce', bounceReason: 'Mailbox full', lastOpened: '—', opens: 0, clicks: 0, unsub: false },
+  { name: 'William Turner', email: 'wturner@gmail.com', status: 'Delivered', bounceReason: '—', lastOpened: '14 May 08:55', opens: 1, clicks: 0, unsub: true },
+  { name: 'Amelia Foster', email: 'a.foster@btinternet.com', status: 'Delivered', bounceReason: '—', lastOpened: '12 May 20:30', opens: 3, clicks: 2, unsub: false },
+  { name: 'Harry Thompson', email: 'h.thompson@sky.com', status: 'Delivered', bounceReason: '—', lastOpened: '15 May 11:05', opens: 2, clicks: 0, unsub: false },
+];
+
+let showPct = true;
+let currentCampaign = null;
+
+function badgeClass(type) {
+  return { 'Promotional': 'b-promo', 'Service': 'b-service', 'Event': 'b-event', 'Newsletter': 'b-news', 'ISV Triggered': 'b-isv' }[type] || 'b-promo';
+}
+
+function setToggle(mode) {
+  showPct = mode === 'pct';
+  document.getElementById('pctBtn').classList.toggle('active', showPct);
+  document.getElementById('cntBtn').classList.toggle('active', !showPct);
+  document.querySelectorAll('.pct-val').forEach(el => el.style.display = showPct ? '' : 'none');
+  document.querySelectorAll('.cnt-val').forEach(el => el.style.display = !showPct ? '' : 'none');
+  document.querySelectorAll('.pct-sub').forEach(el => el.style.display = showPct ? '' : 'none');
+  document.querySelectorAll('.cnt-sub').forEach(el => el.style.display = !showPct ? '' : 'none');
+  filterCampaigns();
+}
+
+function renderCampaigns(list) {
+  document.getElementById('campaignRows').innerHTML = list.map(c => `
+    <div class="cg-row" onclick="goToCampaign(${c.id})">
+      <div class="cg-campaign">
+        <div class="cg-thumb">${c.emoji}</div>
+        <div>
+          <div class="cg-name">${c.name}</div>
+          <div class="cg-meta">
+            <span class="cg-badge ${badgeClass(c.type)}">${c.type}</span>
+            <span class="cg-date">${c.date}</span>
+          </div>
+        </div>
+      </div>
+      <div class="cg-stat">
+        <div class="cg-stat-val">${c.sent.toLocaleString()}</div>
+      </div>
+      <div class="cg-stat">
+        <div class="cg-stat-val">${showPct ? c.openPct + '%' : c.opens.toLocaleString()}</div>
+        <div class="cg-bar"><div class="cg-bar-fill" style="width:${c.openPct}%; background:var(--blue)"></div></div>
+      </div>
+      <div class="cg-stat">
+        <div class="cg-stat-val">${c.clicks.toLocaleString()}</div>
+      </div>
+      <div class="cg-stat">
+        <div class="cg-stat-val" style="color:${c.bouncePct > 4 ? 'var(--danger)' : c.bouncePct > 3 ? 'var(--orange)' : 'var(--navy)'}">${showPct ? c.bouncePct + '%' : c.bounces.toLocaleString()}</div>
+        <div class="cg-bar"><div class="cg-bar-fill" style="width:${c.bouncePct * 10}%; background:var(--danger)"></div></div>
+      </div>
+      <div class="cg-stat">
+        <div class="cg-stat-val" style="color: var(--muted)">${showPct ? c.unsubPct + '%' : c.unsubs}</div>
+      </div>
+      <div class="cg-arr">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCampaigns() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const type = document.getElementById('typeFilter').value;
+  let filtered = campaigns;
+  if (type) filtered = filtered.filter(c => c.type === type);
+  if (search) filtered = filtered.filter(c => c.name.toLowerCase().includes(search));
+  renderCampaigns(filtered);
+}
+
+function setChip(el, type) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('typeFilter').value = type;
+  filterCampaigns();
+}
+
+function goTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'overview') {
+    document.getElementById('breadcrumb').innerHTML = `<div class="bc-item current" onclick="goTo('overview')">Email Analytics</div>`;
+  }
+}
+
+function goToCampaign(id) {
+  currentCampaign = campaigns.find(c => c.id === id);
+  const c = currentCampaign;
+  document.getElementById('dThumb').textContent = c.emoji;
+  document.getElementById('dTitle').textContent = c.name;
+  document.getElementById('dDate').textContent = c.date;
+  document.getElementById('dBadge').innerHTML = `<span class="cg-badge ${badgeClass(c.type)}">${c.type}</span>`;
+  document.getElementById('dk-sent').textContent = c.sent.toLocaleString();
+  const delPct = ((c.sent - c.bounces) / c.sent * 100).toFixed(1);
+  document.getElementById('dk-del').textContent = delPct + '%';
+  document.getElementById('dk-del-sub').textContent = (c.sent - c.bounces).toLocaleString() + ' delivered';
+  document.getElementById('dk-opens').textContent = c.openPct + '%';
+  document.getElementById('dk-opens-sub').textContent = c.opens.toLocaleString() + ' opens';
+  document.getElementById('dk-bounce').textContent = c.bouncePct + '%';
+  document.getElementById('dk-bounce-sub').textContent = c.bounces + ' bounced';
+  document.getElementById('dk-unsub').textContent = c.unsubPct + '%';
+  document.getElementById('dk-unsub-sub').textContent = c.unsubs + ' unsubscribed';
+  document.getElementById('dk-rev').textContent = c.revenue;
+  renderRecipients();
+  goTo('detail');
+  document.getElementById('breadcrumb').innerHTML = `
+    <div class="bc-item" onclick="goTo('overview')">Email Analytics</div>
+    <span class="bc-sep">›</span>
+    <div class="bc-item current">${c.name.substring(0, 45)}${c.name.length > 45 ? '…' : ''}</div>
+  `;
+}
+
+function renderRecipients() {
+  document.getElementById('recipientBody').innerHTML = recipients.map((r, i) => `
+    <tr onclick="openTray(${i})">
+      <td>
+        <div class="r-name">${r.name}</div>
+        <div class="r-email">${r.email}</div>
+      </td>
+      <td>
+        <span class="status-pill ${r.status === 'Delivered' ? 'sp-green' : r.status === 'Hard Bounce' ? 'sp-red' : 'sp-orange'}">
+          ${r.status === 'Delivered' ? '✓' : '✗'} ${r.status}
+        </span>
+      </td>
+      <td class="stat-dim">${r.lastOpened}</td>
+      <td class="stat-num">${r.opens}</td>
+      <td class="stat-num">${r.clicks}</td>
+      <td>${r.unsub ? '<span class="status-pill sp-red">Yes</span>' : '<span class="stat-dim">No</span>'}</td>
+    </tr>
+  `).join('');
+}
+
+function openTray(idx) {
+  const r = recipients[idx];
+  const initials = r.name.split(' ').map(n => n[0]).join('');
+  document.getElementById('trayInit').textContent = initials;
+  document.getElementById('trayName').textContent = r.name;
+  document.getElementById('trayEmail').textContent = r.email;
+  const chip = document.getElementById('trayStatusChip');
+  if (r.status === 'Delivered') { chip.className = 'tray-status-chip delivered'; chip.textContent = '✓ Delivered'; }
+  else if (r.status === 'Hard Bounce') { chip.className = 'tray-status-chip bounced'; chip.textContent = '✗ Hard Bounce'; }
+  else { chip.className = 'tray-status-chip bounced'; chip.textContent = '⚠ ' + r.status; }
+
+  document.getElementById('trayKpis').innerHTML = `
+    <div class="tray-kpi"><div class="tray-kpi-val">${r.opens}</div><div class="tray-kpi-label">Opens</div></div>
+    <div class="tray-kpi"><div class="tray-kpi-val">${r.clicks}</div><div class="tray-kpi-label">Clicks</div></div>
+    <div class="tray-kpi"><div class="tray-kpi-val" style="color:${r.status==='Delivered'?'var(--green)':'var(--danger)'}">${r.status==='Delivered'?'✓':'✗'}</div><div class="tray-kpi-label">Deliverability</div></div>
+    <div class="tray-kpi"><div class="tray-kpi-val" style="color:${r.unsub?'var(--danger)':'var(--green)'}">${r.unsub?'Yes':'No'}</div><div class="tray-kpi-label">Unsubscribed</div></div>
+  `;
+  document.getElementById('trayDetails').innerHTML = `
+    <div class="il-row"><span class="il-key">Email</span><span class="il-val">${r.email}</span></div>
+    <div class="il-row"><span class="il-key">Status</span><span class="il-val"><span class="status-pill ${r.status === 'Delivered' ? 'sp-green' : r.status === 'Hard Bounce' ? 'sp-red' : 'sp-orange'}" style="font-size:11px">${r.status}</span></span></div>
+    <div class="il-row"><span class="il-key">Bounce Reason</span><span class="il-val">${r.bounceReason}</span></div>
+    <div class="il-row"><span class="il-key">Last Opened</span><span class="il-val">${r.lastOpened}</span></div>
+    <div class="il-row"><span class="il-key">Campaign</span><span class="il-val" style="max-width:200px;text-align:right;font-size:12px">${currentCampaign ? currentCampaign.name.substring(0,30)+'…' : '—'}</span></div>
+  `;
+
+  const events = r.opens > 0 ? [
+    { cls: 'tl-i-blue', icon: '✉', event: 'Email Delivered', time: '12 May 2025, 09:00', note: 'Successfully delivered to inbox' },
+    { cls: 'tl-i-green', icon: '👁', event: 'First Opened', time: r.lastOpened, note: 'Opened on mobile · iOS Mail' },
+    ...(r.opens > 1 ? [{ cls: 'tl-i-green', icon: '🔄', event: `Reopened ×${r.opens-1}`, time: '13–15 May 2025', note: `${r.opens} total opens recorded` }] : []),
+    ...(r.clicks > 0 ? [{ cls: 'tl-i-green', icon: '🔗', event: `${r.clicks} Link Click${r.clicks > 1 ? 's' : ''}`, time: '12 May 2025, 09:52', note: '"Book your service online"' }] : []),
+    ...(r.unsub ? [{ cls: 'tl-i-red', icon: '🚫', event: 'Unsubscribed', time: '14 May 2025, 09:00', note: 'Removed from future campaigns' }] : []),
+  ] : [
+    { cls: 'tl-i-blue', icon: '✉', event: 'Send Attempted', time: '12 May 2025, 09:00', note: 'Email queued for delivery' },
+    { cls: 'tl-i-red', icon: '✗', event: 'Bounce Recorded', time: '12 May 2025, 09:01', note: r.bounceReason || 'Delivery failed' },
+  ];
+
+  document.getElementById('trayTimeline').innerHTML = events.map(e => `
+    <div class="tl-item">
+      <div class="tl-icon ${e.cls}">${e.icon}</div>
+      <div class="tl-content">
+        <div class="tl-event">${e.event}</div>
+        <div class="tl-time">${e.time}</div>
+        <div class="tl-note">${e.note}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('tray').classList.add('open');
+}
+
+function closeTray() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('tray').classList.remove('open');
+}
+
+function exportCSV() { alert('Exporting to CSV…'); }
+function exportPDF() { alert('Generating PDF…'); }
+function previewEmail() { alert('Loading email preview…'); }
+
+// Init
+renderCampaigns(campaigns);
+setToggle('pct');
+</script>
+</body>
+</html>
